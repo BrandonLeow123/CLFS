@@ -25,6 +25,8 @@ Disadvantages:
 -Higher memory usage 
 -Conceptually more complex
 
+Hybrid approach
+
 """
 
 
@@ -146,4 +148,57 @@ def add_professional_certification_columns(ws, headers):
                 ws.cell(row=row, column=col).value = (
                     "Yes" if normalise(option) in selected_options else "No"
                 )
+
+#Hybrid approach
+
+def add_ft_pt_column(ws, headers):
+    """
+    Hybrid approach:
+    - Cache input values (safe)
+    - Write output directly to Excel (simple)
+    """
+
+    usual_hours_header = normalise_header("Usual hours of work")
+
+    if usual_hours_header not in headers:
+        return
+
+    # Process each duplicated "Usual hours of work" column
+    for hours_col in sorted(headers[usual_hours_header], reverse=True):
+
+        # -------------------------
+        # STEP 1: CACHE INPUT DATA
+        # -------------------------
+        hours_cache = {}
+
+        for row in range(7, ws.max_row + 1):
+            value = ws.cell(row=row, column=hours_col).value
+            if value not in (None, ""):
+                hours_cache[row] = value
+
+        # If column has no data at all → skip
+        if not hours_cache:
+            continue
+
+        # -------------------------
+        # STEP 2: INSERT FT/PT COLUMN
+        # -------------------------
+        ft_pt_col = hours_col + 1
+        ws.insert_cols(ft_pt_col)
+
+        ws.cell(row=6, column=ft_pt_col).value = "FT/PT"
+
+        # -------------------------
+        # STEP 3: WRITE OUTPUT
+        # -------------------------
+        for row, raw_value in hours_cache.items():
+            try:
+                hours = float(raw_value)
+            except ValueError:
+                continue
+
+            if hours >= 35:
+                ws.cell(row=row, column=ft_pt_col).value = "FT"
+            else:
+                ws.cell(row=row, column=ft_pt_col).value = "PT"
 
